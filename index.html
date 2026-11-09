@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Latihan Soal dari PDF</title>
+<style>
+:root{--bg:#eef3f8;--card:#fff;--ink:#12263f;--mut:#5b6b80;--line:#cfd9e6;--acc:#1b5fd1;--ok:#17803d;--bad:#c4301f;--warn:#b45309}
+@media (prefers-color-scheme:dark){:root{--bg:#0e1621;--card:#16212f;--ink:#e8eef6;--mut:#94a3b8;--line:#2a3a4e;--acc:#6ea4ff;--ok:#4ade80;--bad:#ff7b6b;--warn:#fbbf24}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+main{max-width:640px;margin:0 auto;padding:16px}
+h1{font-size:22px;margin:8px 0 4px}h2{font-size:18px;margin:0 0 8px}
+p{margin:6px 0;color:var(--mut)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin:12px 0}
+button,select,input,textarea{font:inherit;color:inherit}
+button{background:var(--acc);color:#fff;border:0;border-radius:10px;padding:12px 16px;font-weight:600;cursor:pointer;min-height:44px}
+button.alt{background:transparent;color:var(--acc);border:1.5px solid var(--acc)}
+button:disabled{opacity:.5}
+button:focus-visible,textarea:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid var(--warn);outline-offset:2px}
+textarea,select,input[type=number],input[type=file],input[type=text]{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px}
+textarea{min-height:240px;font-size:14px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.row>*{flex:1}
+.hide{display:none}
+#bar{height:8px;background:var(--line);border-radius:4px;overflow:hidden;margin-top:8px}
+#bar i{display:block;height:100%;width:0;background:var(--acc);transition:width .2s}
+.top{position:sticky;top:0;background:var(--bg);padding:8px 0;z-index:5;display:flex;justify-content:space-between;align-items:center}
+#timer{font-size:28px;font-weight:700;font-variant-numeric:tabular-nums}
+#timer.low{color:var(--bad)}
+.opt{display:block;width:100%;text-align:left;background:var(--card);color:var(--ink);border:1.5px solid var(--line);margin:8px 0;font-weight:400}
+.opt.sel{border-color:var(--acc);background:color-mix(in srgb,var(--acc) 14%,var(--card))}
+.opt.ok{border-color:var(--ok)}.opt.no{border-color:var(--bad)}
+.figopts{display:flex;gap:8px}.figopts .opt{flex:1;text-align:center;padding:14px 0;font-weight:700}
+.mr{margin:12px 0}.mb{height:8px;background:var(--line);border-radius:4px;overflow:hidden}.mb i{display:block;height:100%}
+.picw{overflow-x:auto}
+.pic{max-width:100%;display:block;margin:8px 0;border:1px solid var(--line);border-radius:8px;background:#fff}
+.pic.zoom{max-width:none;width:230%}
+.nav{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0;max-height:200px;overflow-y:auto;position:relative}
+.nav button{width:38px;min-height:38px;padding:0;background:var(--card);color:var(--ink);border:1.5px solid var(--line)}
+.nav button.done{background:#17803d;color:#fff;border-color:#17803d}
+.nav button.flag{border:3px solid #c4301f}
+.nav button.cur{background:#fbbf24;color:#222;border-color:#fbbf24}
+#list .row label,#list select{display:none}
+.q{white-space:pre-wrap;font-size:18px}
+.big{font-size:44px;font-weight:800}
+.edit{border-top:1px solid var(--line);padding-top:10px;margin-top:10px}
+.edit textarea{min-height:90px}
+.bad{color:var(--bad)}.ok{color:var(--ok)}
+</style>
+</head>
+<body>
+<main>
+
+<section id="s1">
+  <h1>Latihan soal dari PDF</h1>
+  <p>Semua diproses di HP kamu. File tidak diunggah ke mana pun.</p>
+  <div class="card">
+    <h2>Try out saya</h2>
+    <div id="lib"></div>
+    <p></p><button class="alt" id="stats" style="width:100%">Lihat progres dan analisis</button>
+  </div>
+  <div class="card">
+    <h2>Tambah try out: pilih PDF</h2>
+    <input type="file" id="file" accept="application/pdf">
+    <div id="prog" class="hide"><p id="ptxt"></p><div id="bar"><i></i></div></div>
+  </div>
+  <div id="rawbox" class="card hide">
+    <h2>2. Periksa teks hasil bacaan</h2>
+    <p>Format yang dikenali: soal diawali "1." dan pilihan diawali "A.". Perbaiki salah baca di sini.</p>
+    <textarea id="raw"></textarea>
+    <p></p><button id="parse">Buat soal</button>
+  </div>
+</section>
+
+<section id="s2" class="hide">
+  <h1>Periksa soal</h1>
+  <p id="cnt"></p>
+  <details id="ldet"><summary>Periksa / edit soal</summary><div id="list"></div></details>
+  <div class="card">
+    <h2>Nama try out</h2>
+    <input type="text" id="tname" placeholder="Contoh: Try Out 1">
+    <p></p><h2>Bagian dan sub-materi</h2>
+    <p>Satu baris satu bagian. Contoh: "TWK | 1-30" atau "TIU | Verbal | 31-40". Soal figural otomatis masuk sub-materi Figural.</p>
+    <textarea id="spec" style="min-height:110px"></textarea>
+  </div>
+  <div class="card">
+    <h2>Kunci jawaban (disembunyikan)</h2>
+    <p>Upload PDF kunci, atau ketik/tempel. Contoh: "1. C 2. A", "CAE…", atau untuk TKP "66. A=5 B=4 C=3 D=2 E=1". Isi kunci tidak akan ditampilkan sampai kuis selesai.</p>
+    <input type="file" id="kfile" accept="application/pdf">
+    <p></p>
+    <textarea id="ktxt" style="min-height:80px" placeholder="Ketik atau tempel kunci di sini"></textarea>
+    <p id="kinfo"></p>
+  </div>
+  <div class="card">
+    <h2>Batas waktu total</h2>
+    <div class="row"><input type="number" id="mins" min="1" max="300" value="100" aria-label="Menit"><span>menit</span></div>
+    <p></p>
+    <div class="row"><button class="alt" id="back1">Kembali</button><button id="start">Simpan dan mulai</button></div>
+  </div>
+</section>
+
+<section id="s3" class="hide">
+  <div class="top"><span id="prog3">1/1</span><span id="timer">00:00</span><button class="alt" id="pause" style="flex:0">Jeda</button></div>
+  <div class="card"><div class="q" id="qtxt"></div><div id="qimg"></div><div id="opts"></div></div>
+  <div class="row"><button class="alt" id="prev">Sebelumnya</button><button id="next">Berikutnya</button></div>
+  <button class="alt" id="flag" style="width:100%;margin-top:8px">Tandai ragu-ragu</button>
+  <p>Hijau: sudah dijawab. Kuning: sedang dibuka. Garis merah: ragu-ragu. Ketuk gambar soal untuk memperbesar.</p>
+  <div class="nav" id="nav"></div>
+  <button class="alt" id="finish" style="width:100%">Selesai sekarang</button>
+</section>
+
+<section id="s4" class="hide">
+  <div class="card" style="text-align:center">
+    <p id="why"></p>
+    <div class="big" id="score"></div>
+    <p id="detail"></p>
+    <div class="row"><button id="retryWrong">Ulangi soal yang salah</button><button class="alt" id="toStats">Progres</button><button class="alt" id="home">Menu awal</button></div>
+  </div>
+  <div id="brk"></div>
+  <div id="review"></div>
+</section>
+
+<section id="s5" class="hide">
+  <h1>Progres dan analisis</h1>
+  <div id="statbody"></div>
+  <button class="alt" id="back5" style="width:100%">Kembali</button>
+</section>
+
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js"></script>
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+const $=id=>document.getElementById(id);
+const L=String.fromCharCode(65);
+let Q=[],ans=[],flags=[],IMG={},KEY={},INKEY={},HID={},RAWNAME="",SPEC="",TID=null,RETRY=false,DUR=0,idx=0,endAt=0,tick=null,paused=false,pausedLeft=0;
+
+function store(k,v){try{if(v===undefined){const s=localStorage.getItem(k);return s?JSON.parse(s):null}localStorage.setItem(k,JSON.stringify(v))}catch(e){return null}}
+function drop(k){try{localStorage.removeItem(k)}catch(e){}}
+function show(id){["s1","s2","s3","s4","s5"].forEach(s=>$(s).classList.toggle("hide",s!==id));window.scrollTo(0,0)}
+function esc(s){return s.replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]))}
+
+/* ---------- Baca PDF ---------- */
+async function readPdf(f,done,wantImg){
+  $("prog").classList.remove("hide");$("rawbox").classList.add("hide");
+  try{
+    const pdf=await pdfjsLib.getDocument({data:await f.arrayBuffer()}).promise;
+    let out="",worker=null,lastN=0;const imgs={};
+    for(let p=1;p<=pdf.numPages;p++){
+      setP(`Membaca halaman ${p} dari ${pdf.numPages}`,(p-1)/pdf.numPages);
+      const page=await pdf.getPage(p);
+      const tc=await page.getTextContent();
+      let txt=lines(tc.items);
+      if(txt.replace(/\s/g,"").length<25){
+        if(!worker){setP("Menyiapkan OCR (unduhan pertama agak lama)…",0);worker=await Tesseract.createWorker("ind")}
+        setP(`OCR halaman ${p} dari ${pdf.numPages}`,(p-1)/pdf.numPages);
+        const vp=page.getViewport({scale:2});
+        const cv=document.createElement("canvas");cv.width=vp.width;cv.height=vp.height;
+        await page.render({canvasContext:cv.getContext("2d"),viewport:vp}).promise;
+        const rr=(await worker.recognize(cv)).data;txt=rr.text;
+        if(wantImg)lastN=cropScan(cv,rr.lines||[],imgs,lastN);
+      }else if(wantImg){const g=await grabImages(page,tc.items,imgs,lastN);lastN=g.lastN;txt=lines(g.items)}
+      out+=txt+"\n";
+    }
+    if(worker)await worker.terminate();
+    setP("Selesai membaca."+(wantImg?` ${Object.values(imgs).flat().length} gambar/potongan soal tersimpan.`:""),1);
+    done(out.trim(),imgs);
+  }catch(err){setP("Gagal membaca PDF: "+err.message+". Cek koneksi internet lalu coba lagi.",0)}
+}
+$("file").addEventListener("change",e=>{const f=e.target.files[0];if(f)readPdf(f,(t,im)=>{RAWNAME=f.name;IMG=im;$("raw").value=hideAns(t);$("rawbox").classList.remove("hide")},true)});
+$("kfile").addEventListener("change",e=>{const f=e.target.files[0];if(f)readPdf(f,t=>{$("ktxt").value="";KEY=Object.assign({},INKEY,parseKey(t));showKey()})});
+const MARK=/^\s*(kunci(\s+jawab(an)?)?|jawab(an)?|pembahasan|penjelasan)\b/i;
+function findTables(real,vp){
+  const U=pdfjsLib.Util,S=vp.scale;
+  const its=real.map(it=>{const p=U.applyTransform([it.transform[4],it.transform[5]],vp.transform),h=(it.height||10)*S;return {s:it.str,x0:p[0],x1:p[0]+(it.width||0)*S,y:p[1],t:p[1]-h,b:p[1]+h*.3}}).sort((a,b)=>a.y-b.y||a.x0-b.x0);
+  const rows=[];
+  its.forEach(i=>{const r=rows[rows.length-1];if(r&&Math.abs(r.y-i.y)<=6)r.c.push(i);else rows.push({y:i.y,c:[i]})});
+  rows.forEach(r=>{
+    r.c.sort((a,b)=>a.x0-b.x0);
+    r.cells=[];
+    r.c.forEach(i=>{const l=r.cells[r.cells.length-1];if(l&&i.x0-l.x1<14*S)l.x1=Math.max(l.x1,i.x1);else r.cells.push({x0:i.x0,x1:i.x1})});
+    r.bad=/^\s*\(?[A-Ea-e]\s*[.)]/.test(r.c[0].s)||/^\s*\d{1,3}\s*[.)]/.test(r.c[0].s);
+  });
+  const out=[];let run=[];
+  const flush=()=>{
+    if(run.filter(r=>r.cells.length>=3).length>=2)out.push([Math.min(...run.map(r=>r.cells[0].x0)),Math.min(...run.flatMap(r=>r.c.map(i=>i.t))),Math.max(...run.map(r=>r.cells[r.cells.length-1].x1)),Math.max(...run.flatMap(r=>r.c.map(i=>i.b)))]);
+    run=[];
+  };
+  rows.forEach(r=>{
+    const prev=run[run.length-1],ok=r.cells.length>=2&&!r.bad;
+    if(ok&&(!prev||r.y-prev.y<40*S))run.push(r);
+    else{flush();if(ok)run.push(r)}
+  });
+  flush();
+  return out;
+}
+async function grabImages(page,items,imgs,lastN){
+  const U=pdfjsLib.Util,O=pdfjsLib.OPS,vp=page.getViewport({scale:1.6});
+  const real=items.filter(i=>i.str.trim());
+  const minX=Math.min(...real.map(i=>i.transform[4]),9999);
+  const pos=it=>U.applyTransform([it.transform[4],it.transform[5]],vp.transform);
+  const st=[],opts=[],mk=[];
+  for(const it of real){
+    const y=pos(it)[1],m=it.str.match(/^\s*(\d{1,3})\s*[.)]/);
+    if(m&&it.transform[4]<=minX+25)st.push({n:+m[1],y});
+    else if(/^\s*\(?[A-Ea-e]\s*[.)]/.test(it.str))opts.push(y);
+    else if(MARK.test(it.str))mk.push(y);
+  }
+  st.sort((a,b)=>a.y-b.y);
+  const fig=new Set(),lim=[];
+  st.forEach((s,i)=>{
+    const end=i+1<st.length?st[i+1].y:1e9;
+    if(opts.filter(y=>y>=s.y&&y<end).length<2)fig.add(s.n);
+    const m=mk.filter(y=>y>s.y&&y<end);lim.push(m.length?Math.min(...m):1e9);
+  });
+  const owner=y=>{let k=-1;st.forEach((s,i)=>{if(s.y<=y+20)k=i});return k};
+  const ops=await page.getOperatorList();
+  let ctm=[1,0,0,1,0,0],stack=[];const boxes=[];
+  for(let i=0;i<ops.fnArray.length;i++){
+    const f=ops.fnArray[i],a=ops.argsArray[i];
+    if(f===O.save)stack.push(ctm.slice());
+    else if(f===O.restore)ctm=stack.pop()||[1,0,0,1,0,0];
+    else if(f===O.transform)ctm=U.transform(ctm,a);
+    else if(f===O.paintFormXObjectBegin){stack.push(ctm.slice());if(a[0])ctm=U.transform(ctm,a[0])}
+    else if(f===O.paintFormXObjectEnd)ctm=stack.pop()||ctm;
+    else if(f===O.paintImageXObject||f===O.paintInlineImageXObject||f===O.paintImageMaskXObject){
+      const m=U.transform(vp.transform,ctm);
+      const xs=[m[4],m[4]+m[0],m[4]+m[2],m[4]+m[0]+m[2]],ys=[m[5],m[5]+m[1],m[5]+m[3],m[5]+m[1]+m[3]];
+      const b=[Math.min(...xs),Math.min(...ys),Math.max(...xs),Math.max(...ys)];
+      const w=b[2]-b[0],h=b[3]-b[1];
+      if(w>=40&&h>=40&&w*h<vp.width*vp.height*.9)boxes.push(b);
+    }
+  }
+  const tabs=findTables(real,vp).filter(t=>{const k=owner(t[1]);return !(k>=0&&fig.has(st[k].n))});
+  const inTab=it=>{const p=pos(it);return tabs.some(t=>p[0]>=t[0]-4&&p[0]<=t[2]+4&&p[1]>=t[1]-4&&p[1]<=t[3]+4)};
+  if(boxes.length||fig.size||tabs.length){
+    const cv=document.createElement("canvas");cv.width=vp.width;cv.height=vp.height;
+    await page.render({canvasContext:cv.getContext("2d"),viewport:vp}).promise;
+    const crop=(x,y,w,h)=>{
+      x=Math.max(0,x);y=Math.max(0,y);w=Math.min(cv.width-x,w);h=Math.min(cv.height-y,h);
+      const c=document.createElement("canvas");c.width=w;c.height=h;
+      c.getContext("2d").drawImage(cv,x,y,w,h,0,0,w,h);
+      return c.toDataURL("image/jpeg",.85);
+    };
+    st.forEach((s,i)=>{
+      if(!fig.has(s.n))return;
+      const y0=Math.max(0,s.y-26),nx=i+1<st.length?st[i+1].y-26:cv.height,y1=Math.max(y0+40,Math.min(nx,lim[i]-4));
+      imgs[s.n]=[crop(vp.width*.06,y0,vp.width*.88,y1-y0)];
+    });
+    const put=(b,w,h)=>{
+      const k=owner(b[1]);
+      if(k>=0&&b[1]>lim[k])return;
+      const n=k>=0?st[k].n:lastN;
+      if(!n||fig.has(n))return;
+      (imgs[n]=imgs[n]||[]).push(crop(b[0]-w,b[1]-w,b[2]-b[0]+2*w,b[3]-b[1]+2*w));
+    };
+    boxes.sort((a,b)=>a[1]-b[1]).forEach(b=>put(b,4));
+    tabs.sort((a,b)=>a[1]-b[1]).forEach(t=>put(t,8));
+  }
+  return {lastN:st.length?st[st.length-1].n:lastN,items:items.filter(it=>!inTab(it))};
+}
+function cropScan(cv,lns,imgs,lastN){
+  const st=[],mk=[];
+  lns.forEach(l=>{
+    const m=l.text.match(/^\s*(\d{1,3})\s*[.)]\s+\S/);
+    if(m&&l.bbox.x0<cv.width*.25)st.push({n:+m[1],y:l.bbox.y0});
+    else if(MARK.test(l.text))mk.push(l.bbox.y0);
+  });
+  st.sort((a,b)=>a.y-b.y);
+  st.forEach((s,i)=>{
+    const nx=i+1<st.length?st[i+1].y:cv.height,m=mk.filter(y=>y>s.y&&y<nx);
+    const y0=Math.max(0,s.y-8),y1=Math.min(nx-4,m.length?Math.min(...m)-4:1e9);
+    if(y1-y0<30)return;
+    const c=document.createElement("canvas");c.width=cv.width;c.height=y1-y0;
+    c.getContext("2d").drawImage(cv,0,y0,cv.width,y1-y0,0,0,cv.width,y1-y0);
+    imgs[s.n]=[c.toDataURL("image/jpeg",.7)];
+  });
+  return st.length?st[st.length-1].n:lastN;
+}
+function setP(t,r){if(!$("s2").classList.contains("hide"))$("kinfo").textContent=t;$("ptxt").textContent=t;$("bar").firstElementChild.style.width=Math.round(r*100)+"%"}
+function lines(items){
+  let y=null,s="";
+  for(const it of items){
+    if(y!==null&&Math.abs(it.transform[5]-y)>3)s+="\n";
+    s+=it.str;y=it.transform[5];
+  }
+  return s;
+}
+
+/* ---------- Pecah jadi soal ---------- */
+const HEAD=/\b(twk|tiu|tkp|wawasan\s+kebangsaan|intelegens?i[a]?\s+umum|intelijens?i\s+umum|karakteristik\s+pribadi)\b/i;
+const isHead=ln=>ln.length<70&&HEAD.test(ln)&&!/^(\d|\(?[A-Ea-e]\s*[.)])/.test(ln);
+const ANS=/^(?:kunci(?:\s+jawab(?:an)?)?|jawab(?:an)?)\s*(?:[:=\-]|adalah)?\s*\(?([A-Ea-e])\)?(?![A-Za-z])/i;
+const ANS2=/^(?:kunci(?:\s+jawab(?:an)?)?|jawab(?:an)?)\s*[:=]\s*\(?([A-Ea-e])\)?\s*[.)]?\s*$/i;
+const EXP=/^(?:pembahasan|penjelasan)(?:\s+soal)?\s*[:\-]?\s*(.*)$/i;
+const PT=/\bA\s*[=:\-(]\s*([1-5])\D{0,8}B\s*[=:\-(]\s*([1-5])\D{0,8}C\s*[=:\-(]\s*([1-5])\D{0,8}D\s*[=:\-(]\s*([1-5])(?:\D{0,8}E\s*[=:\-(]\s*([1-5]))?/i;
+function hideAns(text){
+  HID={};let n=0,hid=false;const out=[];
+  for(const ln of text.split(/\r?\n/)){
+    const t=ln.trim(),m=t.match(/^(\d{1,3})\s*[.)]\s+/);
+    if(hid){if(m&&+m[1]===n+1)hid=false;else{HID[n].push(ln);continue}}
+    if(m&&+m[1]>n){n=+m[1];out.push(ln);continue}
+    if(n&&(ANS.test(t)||EXP.test(t))){hid=true;HID[n]=[ln];out.push(`[kunci dan pembahasan soal ${n} disembunyikan]`);continue}
+    out.push(ln);
+  }
+  return out.join("\n");
+}
+function parse(text){
+  const res=[];let cur=null,opt=-1;
+  for(let ln of text.split(/\r?\n/)){
+    ln=ln.trim();
+    if(!ln||/^[A-Ea-e]$/.test(ln)||isHead(ln))continue;
+    let m=ln.match(/^(\d{1,3})\s*[.)]\s+(.*)/);
+    if(m&&cur&&cur.mode==="e"&&+m[1]!==cur.n+1)m=null;
+    const o=ln.match(/^\(?([A-Ea-e])\s*[.)]\s*(.+)/);
+    if(m){if(cur)res.push(cur);cur={n:+m[1],q:m[2],o:[],k:-1,ans:-1};opt=-1;continue}
+    if(!cur)continue;
+    let a,e,p;
+    if(a=ln.match(cur.mode==="e"?ANS2:ANS)){cur.ans=a[1].toUpperCase().charCodeAt(0)-65;cur.mode="e";cur.e=cur.e||"";continue}
+    if(e=ln.match(EXP)){cur.mode="e";cur.e=e[1];if(p=e[1].match(PT))cur.pts=p.slice(1,6).filter(v=>v).map(Number);continue}
+    if(cur.mode==="e"&&(p=ln.match(PT)))cur.pts=p.slice(1,6).filter(v=>v).map(Number);
+    if(cur.mode==="e"){cur.e+=" "+ln;continue}
+    if(o){cur.o.push(o[2]);opt=cur.o.length-1}
+    else if(opt>=0)cur.o[opt]+=" "+ln;
+    else cur.q+="\n"+ln;
+  }
+  if(cur)res.push(cur);
+  res.forEach(x=>{x.e=(x.e||"").trim();if(x.o.length<2&&(IMG[x.n]||[]).length){x.o=["A","B","C","D","E"];x.fig=true}});
+  return res.filter(x=>x.o.length>=2);
+}
+$("parse").onclick=()=>{
+  Q=parse($("raw").value.replace(/^\[kunci dan pembahasan soal (\d+) disembunyikan\]\s*$/gm,(x,k)=>(HID[k]||[]).join("\n")));
+  if(!Q.length){alert("Belum ada soal pilihan ganda yang terbaca. Pastikan soal diawali 1. dan pilihan diawali A. lalu coba lagi.");return}
+  INKEY={};Q.forEach(q=>{if(q.pts)INKEY[q.n]=q.pts;else if(q.ans>=0)INKEY[q.n]=q.ans});
+  TID=null;KEY=Object.assign({},INKEY);SPEC="";RETRY=false;$("tname").value=RAWNAME.replace(/\.pdf$/i,"");$("ktxt").value="";$("spec").value=detectSpec($("raw").value,Q);$("ldet").open=true;
+  renderList();show("s2");
+};
+
+function lab(q,j){return q.fig?String.fromCharCode(65+j):String.fromCharCode(65+j)+". "+esc(q.o[j])}
+function imgs(n){const a=IMG[n]||[];return a.length?`<div class="picw">${a.map(u=>`<img class="pic" src="${u}" alt="Gambar soal ${n}">`).join("")}</div>`:""}
+document.addEventListener("click",e=>{if(e.target.classList&&e.target.classList.contains("pic"))e.target.classList.toggle("zoom")});
+
+/* ---------- Bagian, skor, analisis ---------- */
+function detectSpec(text,Q){
+  const nm=x=>/wawasan|twk/i.test(x)?"TWK":/intel|tiu/i.test(x)?"TIU":"TKP";
+  const marks=[];let last=0;
+  for(let ln of text.split(/\r?\n/)){
+    ln=ln.trim();
+    const m=ln.match(/^(\d{1,3})\s*[.)]\s+/);
+    if(m){if(+m[1]>last)last=+m[1];continue}
+    if(isHead(ln)){const n=nm(ln);if(!marks.length||marks[marks.length-1].name!==n)marks.push({name:n,from:last+1})}
+  }
+  const mx=Math.max(0,...Q.map(q=>q.n));
+  if(marks.length)return marks.map((x,i)=>`${x.name} | ${x.from}-${i+1<marks.length?marks[i+1].from-1:mx}`).join("\n");
+  const f=[...new Set(((RAWNAME+" "+text.slice(0,3000)).match(/\b(twk|tiu|tkp)\b/gi)||[]).map(x=>x.toUpperCase()))];
+  if(f.length===1)return `${f[0]} | 1-${mx}`;
+  if(mx===110)return "TWK | 1-30\nTIU | 31-65\nTKP | 66-110";
+  return `Umum | 1-${mx}`;
+}
+function parseSpec(t){
+  const r=[];
+  t.split("\n").forEach(l=>{
+    l=l.trim();if(!l)return;
+    const p=l.split("|").map(x=>x.trim());
+    let m=p[p.length-1].match(/^(\d+)\s*[-–]\s*(\d+)$/),name,sub="";
+    if(m&&p.length>=2){name=p[0];sub=p.length>=3?p[1]:""}
+    else{m=l.match(/^(.*?)\s+(\d+)\s*[-–]\s*(\d+)$/);if(!m)return;name=m[1];m=[0,m[2],m[3]]}
+    if(name)r.push({sec:name,sub,a:+m[1],b:+m[2]});
+  });
+  return r;
+}
+function tagOf(rows,q){
+  const hit=rows.filter(x=>q.n>=x.a&&q.n<=x.b),s=hit.find(x=>!x.sub)||hit[0],u=hit.find(x=>x.sub);
+  return {sec:s?s.sec:"Lainnya",sub:u?u.sub:(q.fig?"Figural":"Umum")};
+}
+function hasKey(q){return Array.isArray(q.k)||q.k>=0}
+function pts(q,a){if(a<0||!hasKey(q))return 0;return Array.isArray(q.k)?(q.k[a]||0):(a===q.k?5:0)}
+function best(q){return Array.isArray(q.k)?q.k.indexOf(Math.max(...q.k)):q.k}
+function analyze(){
+  const rows=parseSpec(SPEC),sec={},sub={};let total=0,max=0;
+  Q.forEach((q,i)=>{
+    if(!hasKey(q))return;
+    const t=tagOf(rows,q),p=pts(q,ans[i]);
+    [[sec,t.sec],[sub,t.sec+" › "+t.sub]].forEach(([o,k])=>{
+      const x=o[k]=o[k]||{s:0,max:0,n:0,blank:0};
+      x.s+=p;x.max+=5;x.n++;if(ans[i]<0)x.blank++;
+    });
+    total+=p;max+=5;
+  });
+  return {sec,sub,total,max};
+}
+function rows2(o,asc){
+  const e=Object.entries(o);
+  if(asc)e.sort((a,b)=>a[1].s/a[1].max-b[1].s/b[1].max);
+  return e.map(([k,x])=>{
+    const p=Math.round(x.s/x.max*100),c=p<50?"var(--bad)":p<75?"var(--warn)":"var(--ok)";
+    return `<div class="mr"><div class="row" style="gap:4px"><b style="flex:3">${esc(k)}</b><span style="flex:2;text-align:right">${x.s}/${x.max} (${p}%)</span></div><div class="mb"><i style="width:${p}%;background:${c}"></i></div></div>`;
+  }).join("");
+}
+function brk(A){return `<div class="card"><h2>Nilai per bagian</h2>${rows2(A.sec)}</div><div class="card"><h2>Per sub-materi (terlemah di atas)</h2>${rows2(A.sub,true)}</div>`}
+
+/* ---------- Perpustakaan try out ---------- */
+function libGet(){return store("to_index")||[]}
+function saveTO(){
+  if(!TID)TID="t"+Date.now();
+  let lib=libGet();
+  const name=$("tname").value.trim()||"Try Out "+(lib.findIndex(x=>x.id===TID)>=0?lib.findIndex(x=>x.id===TID)+1:lib.length+1);
+  $("tname").value=name;
+  store("to:"+TID,{name,Q:Q.map(q=>({n:q.n,q:q.q,o:q.o,fig:q.fig||0,e:q.e||""})),KEY,spec:SPEC,mins:+$("mins").value||100});
+  idbSet("imgs:"+TID,IMG);
+  const meta={id:TID,name,count:Q.length},i=lib.findIndex(x=>x.id===TID);
+  if(i<0)lib.push(meta);else lib[i]=meta;
+  store("to_index",lib);
+}
+function renderLib(){
+  const lib=libGet();
+  $("lib").innerHTML=lib.length?lib.map(m=>{
+    const h=store("hist:"+m.id)||[],l=h[h.length-1];
+    return `<div class="edit"><b>${esc(m.name)}</b><p>${m.count} soal. ${h.length?`Dikerjakan ${h.length}x, terakhir ${l.total}/${l.max}.`:"Belum dikerjakan."}</p><div class="row"><button data-start="${m.id}">Mulai</button><button class="alt" data-hist="${m.id}">Riwayat</button><button class="alt" data-rm="${m.id}" style="flex:0">Hapus</button></div></div>`;
+  }).join(""):"<p>Belum ada try out. Tambahkan lewat upload PDF di bawah.</p>";
+}
+async function loadTO(id){
+  const r=store("to:"+id);if(!r)return;
+  TID=id;RETRY=false;Q=r.Q;KEY=r.KEY||{};INKEY=Object.assign({},KEY);IMG=(await idbGet("imgs:"+id))||{};
+  $("tname").value=r.name;$("spec").value=r.spec||"";$("mins").value=r.mins||100;$("ktxt").value="";
+  renderList();$("ldet").open=false;show("s2");
+}
+function statsView(only){
+  const all=[];
+  libGet().filter(m=>!only||m.id===only).forEach(m=>(store("hist:"+m.id)||[]).forEach(h=>all.push({...h,name:m.name})));
+  if(!all.length)return `<div class="card"><p>Belum ada riwayat. Selesaikan satu try out dulu.</p></div>`;
+  all.sort((a,b)=>a.t-b.t);
+  const dt=x=>new Date(x.t).toLocaleDateString("id-ID",{day:"numeric",month:"short"});
+  const pc=v=>Math.round(v.s/v.max*100);
+  let h="";
+  [...new Set(all.flatMap(x=>Object.keys(x.sec)))].forEach(k=>{
+    const r=all.filter(x=>x.sec[k]);
+    h+=`<div class="card"><h2>Progres ${esc(k)}</h2>`+r.map((x,i)=>{
+      const v=x.sec[k],pv=i?r[i-1].sec[k]:null,d=pv?pc(v)-pc(pv):null;
+      return `<div class="mr"><div class="row" style="gap:4px"><b style="flex:3">${esc(x.name)}</b><span style="flex:2;text-align:right">${v.s}/${v.max}${d===null?"":` (${d>=0?"+":""}${d}%)`}</span></div><div class="mb"><i style="width:${pc(v)}%;background:var(--acc)"></i></div><p>${dt(x)}, ${v.n} soal</p></div>`;
+    }).join("")+`</div>`;
+  });
+  const full=all.filter(x=>Object.keys(x.sec).length>1);
+  if(full.length)h+=`<div class="card"><h2>Skor gabungan (lebih dari satu bagian)</h2>`+full.map(x=>`<div class="mr"><div class="row" style="gap:4px"><b style="flex:3">${esc(x.name)}</b><span style="flex:2;text-align:right">${x.total}/${x.max}</span></div><div class="mb"><i style="width:${Math.round(x.total/x.max*100)}%;background:var(--acc)"></i></div><p>${dt(x)}</p></div>`).join("")+`</div>`;
+  const sum=key=>{const g={};all.forEach(x=>Object.entries(x[key]).forEach(([k,v])=>{const a=g[k]=g[k]||{s:0,max:0};a.s+=v.s;a.max+=v.max}));return g};
+  h+=`<div class="card"><h2>Rata-rata per bagian</h2>${rows2(sum("sec"))}</div>`;
+  h+=`<div class="card"><h2>Sub-materi dari yang paling lemah</h2>${rows2(sum("sub"),true)}</div>`;
+  return h;
+}
+
+/* ---------- Kunci jawaban ---------- */
+function parseKey(t){
+  const k={};let m;
+  const P=/(\d{1,3})\s*[.)\-:|]?\s*\(?A\)?\s*[=:\-]?\s*([1-5])[\s,;|]*\(?B\)?\s*[=:\-]?\s*([1-5])[\s,;|]*\(?C\)?\s*[=:\-]?\s*([1-5])[\s,;|]*\(?D\)?\s*[=:\-]?\s*([1-5])(?:[\s,;|]*\(?E\)?\s*[=:\-]?\s*([1-5]))?/gi;
+  t=t.replace(P,(x,n,a,b,c,d,e)=>{k[+n]=[a,b,c,d,e].filter(v=>v).map(Number);return " "});
+  const D=/(\d{1,3})\s*[.)\-:|]?\s+([1-5])[\s,;|]+([1-5])[\s,;|]+([1-5])[\s,;|]+([1-5])[\s,;|]+([1-5])(?!\d)/g;
+  t=t.replace(D,(x,n,a,b,c,d,e)=>{if(k[+n]===undefined)k[+n]=[a,b,c,d,e].map(Number);return " "});
+  const re=/(\d{1,3})\s*[.\-:)=|]?\s*\(?([A-Ea-e])\)?(?![A-Za-z])/g;
+  while((m=re.exec(t)))if(k[+m[1]]===undefined)k[+m[1]]=m[2].toUpperCase().charCodeAt(0)-65;
+  if(!Object.keys(k).length)[...t.replace(/[^A-Ea-e]/g,"").toUpperCase()].forEach((c,i)=>k[i+1]=c.charCodeAt(0)-65);
+  return k;
+}
+function showKey(){
+  const miss=Q.filter(q=>KEY[q.n]===undefined).map(q=>q.n);
+  const n=Q.length-miss.length;
+  $("kinfo").textContent=n?`Kunci terbaca untuk ${n} dari ${Q.length} soal${Q.filter(q=>Array.isArray(KEY[q.n])).length?` (termasuk soal berpoin 1-5)`:""}. Isinya sengaja tidak ditampilkan.`+(miss.length&&miss.length<=15?` Nomor tanpa kunci: ${miss.join(", ")}.`:""):"Belum ada kunci jawaban.";
+  store("quiz_key",KEY);
+}
+$("ktxt").addEventListener("input",()=>{KEY=Object.assign({},INKEY,parseKey($("ktxt").value));showKey()});
+
+/* ---------- Periksa soal ---------- */
+function renderList(){
+  $("cnt").textContent=`${Q.length} soal terbaca. Periksa teks soal bila perlu, lalu masukkan kunci jawaban di bawah.`;showKey();
+  $("list").innerHTML="";
+  Q.forEach((q,i)=>{
+    const d=document.createElement("div");d.className="card";
+    d.innerHTML=`<b>Soal ${i+1}</b>${imgs(q.n)}
+    <div class="edit"><textarea data-i="${i}" aria-label="Teks soal ${i+1}">${esc(q.fig?q.q:q.q+"\n"+q.o.map((t,j)=>String.fromCharCode(65+j)+". "+t).join("\n"))}</textarea></div>
+    <div class="row edit"><label for="k${i}">Kunci jawaban</label><select id="k${i}" data-k="${i}"><option value="-1">Belum dipilih</option>${q.o.map((_,j)=>`<option value="${j}" ${q.k===j?"selected":""}>${String.fromCharCode(65+j)}</option>`).join("")}</select><button class="alt" data-del="${i}" style="flex:0">Hapus</button></div>`;
+    $("list").appendChild(d);
+  });
+}
+$("list").addEventListener("change",e=>{
+  const t=e.target;
+  if(t.dataset.k!==undefined)Q[+t.dataset.k].k=+t.value;
+  if(t.dataset.i!==undefined&&Q[+t.dataset.i].fig){Q[+t.dataset.i].q=t.value;return}
+  if(t.dataset.i!==undefined){
+    const r=parse("1. "+t.value.replace(/^\s*\d+[.)]\s*/,""));
+    if(r[0]){const k=Q[+t.dataset.i].k,n=Q[+t.dataset.i].n;Q[+t.dataset.i]=r[0];r[0].n=n;Q[+t.dataset.i].k=k<r[0].o.length?k:-1;renderList()}
+  }
+});
+$("list").addEventListener("click",e=>{
+  if(e.target.dataset.del!==undefined){Q.splice(+e.target.dataset.del,1);renderList()}
+});
+$("back1").onclick=()=>{renderLib();show("s1")};
+
+/* ---------- Kuis ---------- */
+$("start").onclick=()=>{
+  if(!Q.length)return;
+  if(!Object.keys(KEY).length&&!confirm("Belum ada kunci jawaban, jadi skor tidak bisa dihitung. Tetap mulai?"))return;
+  Q.forEach(q=>q.k=KEY[q.n]!==undefined?KEY[q.n]:-1);
+  RETRY=false;SPEC=$("spec").value;saveTO();DUR=Math.max(1,+$("mins").value||30)*60000;
+  ans=Q.map(()=>-1);flags=Q.map(()=>false);idx=0;paused=false;
+  endAt=Date.now()+Math.max(1,+$("mins").value||30)*60000;
+  saveSession();runQuiz();
+};
+function saveSession(){if(RETRY)return;store("quiz_session",{tid:TID,dur:DUR,endAt,ans,flags,idx,paused,pausedLeft})}
+function runQuiz(){
+  show("s3");$("pause").textContent=paused?"Lanjut":"Jeda";
+  drawQ();clearInterval(tick);tick=setInterval(onTick,250);onTick();
+}
+function left(){return paused?pausedLeft:endAt-Date.now()}
+function onTick(){
+  const ms=left();
+  if(ms<=0){finishQuiz("Waktu habis.");return}
+  const s=Math.ceil(ms/1000),m=Math.floor(s/60);
+  $("timer").textContent=String(m).padStart(2,"0")+":"+String(s%60).padStart(2,"0");
+  $("timer").classList.toggle("low",s<=10);
+}
+function drawQ(){
+  const q=Q[idx];
+  $("prog3").textContent=`${idx+1}/${Q.length}`;
+  $("qtxt").textContent=q.q;$("qimg").innerHTML=imgs(q.n);
+  $("opts").innerHTML="";$("opts").className=q.fig?"figopts":"";
+  q.o.forEach((t,j)=>{
+    const b=document.createElement("button");b.className="opt"+(ans[idx]===j?" sel":"");
+    b.textContent=q.fig?String.fromCharCode(65+j):String.fromCharCode(65+j)+". "+t;
+    b.onclick=()=>{if(paused)return;ans[idx]=j;saveSession();drawQ()};
+    $("opts").appendChild(b);
+  });
+  $("nav").innerHTML="";
+  Q.forEach((_,i)=>{
+    const b=document.createElement("button");b.textContent=i+1;
+    b.className=(ans[i]>=0?"done ":"")+(flags[i]?"flag ":"")+(i===idx?"cur":"");
+    b.onclick=()=>{idx=i;saveSession();drawQ()};
+    $("nav").appendChild(b);
+  });
+  const c=$("nav").querySelector(".cur");if(c)$("nav").scrollTop=Math.max(0,c.offsetTop-80);
+  $("flag").textContent=flags[idx]?"Hapus tanda ragu-ragu":"Tandai ragu-ragu";
+  $("prev").disabled=idx===0;$("next").disabled=idx===Q.length-1;
+}
+$("prev").onclick=()=>{idx--;saveSession();drawQ()};
+$("flag").onclick=()=>{flags[idx]=!flags[idx];saveSession();drawQ()};
+$("next").onclick=()=>{idx++;saveSession();drawQ()};
+$("pause").onclick=()=>{
+  if(!paused){pausedLeft=endAt-Date.now();paused=true}
+  else{endAt=Date.now()+pausedLeft;paused=false}
+  $("pause").textContent=paused?"Lanjut":"Jeda";saveSession();
+};
+$("finish").onclick=()=>{
+  const blank=ans.filter(a=>a<0).length;
+  if(confirm(blank?`Masih ada ${blank} soal kosong. Selesaikan sekarang?`:"Selesaikan kuis sekarang?"))finishQuiz("Kuis selesai.");
+};
+
+/* ---------- Hasil ---------- */
+let wrong=[];
+function finishQuiz(why){
+  clearInterval(tick);drop("quiz_session");
+  const A=analyze(),used=Math.max(0,DUR-Math.max(0,left()));
+  wrong=[];Q.forEach((q,i)=>{if(hasKey(q)&&pts(q,ans[i])<5)wrong.push(i)});
+  if(A.max&&!RETRY&&TID){const h=store("hist:"+TID)||[];h.push({t:Date.now(),used,total:A.total,max:A.max,sec:A.sec,sub:A.sub});store("hist:"+TID,h)}
+  $("why").textContent=why+(RETRY?" (latihan ulang, tidak masuk riwayat)":"");
+  $("score").textContent=A.max?A.total:"–";
+  $("detail").textContent=A.max?`dari ${A.max} poin. Waktu terpakai ${Math.round(used/60000)} menit. ${ans.filter(a=>a<0).length} soal kosong.`:"Belum ada kunci jawaban, jadi skor tidak bisa dihitung.";
+  $("brk").innerHTML=A.max?brk(A):"";
+  $("retryWrong").classList.toggle("hide",!wrong.length);
+  $("review").innerHTML=wrong.map(i=>{
+    const q=Q[i],a=ans[i];
+    return `<div class="card"><b>Soal ${q.n}</b><div class="q">${esc(q.q)}</div>${imgs(q.n)}
+    <p class="bad">Jawabanmu: ${a>=0?lab(q,a)+(Array.isArray(q.k)?` (poin ${q.k[a]})`:""):"kosong"}</p>
+    <p class="ok">${Array.isArray(q.k)?"Poin terbaik":"Kunci"}: ${lab(q,best(q))}</p>${q.e?`<p><b>Pembahasan:</b> ${esc(q.e)}</p>`:""}</div>`;
+  }).join("");
+  const ex=Q.filter(q=>q.e);
+  if(ex.length)$("review").innerHTML+=`<details class="card"><summary>Pembahasan semua soal (${ex.length})</summary>${ex.map(q=>`<p><b>Soal ${q.n}, kunci ${hasKey(q)?lab(q,best(q)):"-"}:</b> ${esc(q.e)}</p>`).join("")}</details>`;
+  show("s4");
+}
+$("retryWrong").onclick=()=>{
+  Q=wrong.map(i=>Q[i]);RETRY=true;DUR=Math.max(1,+$("mins").value||30)*60000;ans=Q.map(()=>-1);flags=Q.map(()=>false);idx=0;paused=false;
+  endAt=Date.now()+Math.max(1,+$("mins").value||30)*60000;
+  saveSession();runQuiz();
+};
+$("home").onclick=()=>{init();show("s1")};
+
+/* ---------- Penyimpanan gambar ---------- */
+function idb(){return new Promise((res,rej)=>{const r=indexedDB.open("quiz",1);r.onupgradeneeded=()=>r.result.createObjectStore("kv");r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})}
+async function idbSet(k,v){try{const d=await idb();await new Promise((res,rej)=>{const t=d.transaction("kv","readwrite");t.objectStore("kv").put(v,k);t.oncomplete=res;t.onerror=rej})}catch(e){}}
+async function idbGet(k){try{const d=await idb();return await new Promise((res,rej)=>{const r=d.transaction("kv").objectStore("kv").get(k);r.onsuccess=()=>res(r.result);r.onerror=rej})}catch(e){return null}}
+
+/* ---------- Awal ---------- */
+function init(){renderLib()}
+$("lib").addEventListener("click",e=>{
+  const b=e.target.closest("button");if(!b)return;
+  if(b.dataset.start)loadTO(b.dataset.start);
+  else if(b.dataset.hist){$("statbody").innerHTML=statsView(b.dataset.hist);show("s5")}
+  else if(b.dataset.rm&&confirm("Hapus try out ini beserta riwayatnya?")){
+    const id=b.dataset.rm;drop("to:"+id);drop("hist:"+id);idbSet("imgs:"+id,null);
+    store("to_index",libGet().filter(x=>x.id!==id));renderLib();
+  }
+});
+$("stats").onclick=$("toStats").onclick=()=>{$("statbody").innerHTML=statsView();show("s5")};
+$("back5").onclick=()=>{init();show("s1")};
+init();
+(async()=>{
+  const ses=store("quiz_session");
+  if(!ses)return;
+  const rec=ses.tid&&store("to:"+ses.tid);
+  if(rec&&confirm("Ada kuis yang belum selesai. Lanjutkan?")){
+    TID=ses.tid;Q=rec.Q;KEY=rec.KEY||{};SPEC=rec.spec||"";IMG=(await idbGet("imgs:"+TID))||{};
+    Q.forEach(q=>q.k=KEY[q.n]!==undefined?KEY[q.n]:-1);
+    ans=ses.ans;flags=ses.flags||Q.map(()=>false);idx=ses.idx;endAt=ses.endAt;paused=ses.paused;pausedLeft=ses.pausedLeft;DUR=ses.dur||0;runQuiz();
+  }else drop("quiz_session");
+})();
+</script>
+</body>
+</html>
